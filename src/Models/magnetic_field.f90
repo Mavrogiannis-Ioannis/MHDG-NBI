@@ -24,8 +24,6 @@ CONTAINS
       nnodes = Mesh%Nnodes
 #endif
 
-      ALLOCATE (magn%where_core(nnodes))
-
       ! Allocate storing space in phys
       ALLOCATE (phys%B(nnodes, 3))
       ALLOCATE (phys%magnetic_flux(nnodes))
@@ -96,7 +94,6 @@ CONTAINS
       ! Adimensionalization of the magnetic field
       !phys%B = phys%B/phys%B0
 
-      call get_where_core(magn%where_core)
    END SUBROUTINE load_magnetic_field
 
    !***********************************************************************
@@ -1357,27 +1354,5 @@ CONTAINS
       END IF
 
    END SUBROUTINE SetPuff
-
-   subroutine get_where_core(where_core)
-      ! real*8, intent(in) :: B(:, :), magnetic_flux(:)
-
-      logical, intent(out):: where_core(:)
-      SELECT case (switch%testcase)
-      case (60)
-         print *, shape(mesh%X)
-         print *, maxval(mesh%X)
-         where_core = norm2(mesh%X, dim=2) < 0.75
-      case (54)
-
-         ! real*8 :: x_flux
-         ! Bpol = norm2(B(:,:2), dim=2)
-         ! x_flux = phys%magnetic_flux(minloc(norm2(phys%b(:, :2), dim=2), dim=1))
-         where_core = phys%magnetic_flux < phys%magnetic_flux(minloc(norm2(phys%b(:, :2), dim=2), dim=1))
-      case DEFAULT
-         print *, "FAIL! unkown testcase in get_where_core"
-
-      end SELECT
-
-   end subroutine
 
 END MODULE Magnetic_field

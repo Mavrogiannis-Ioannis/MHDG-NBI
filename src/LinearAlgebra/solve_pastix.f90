@@ -160,7 +160,7 @@ CONTAINS
 #endif
 
       call spmUpdateComputedFields(matPASTIX%spm)
-      call spmAlloc(matPASTIX%spm)
+      !call spmAlloc(matPASTIX%spm)
 
       matPASTIX%spm%colptr = c_loc(matK%rowptr)
       matPASTIX%spm%rowptr = c_loc(matK%cols)

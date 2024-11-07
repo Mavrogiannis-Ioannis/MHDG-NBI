@@ -1652,7 +1652,7 @@ CONTAINS
          gradbtor = 0.
          gradbtor(1) = dot_product(Nxg, b_tor_nod)
          gradbtor(2) = dot_product(Nyg, b_tor_nod)
-      CALL assemblyVolumeContribution(Auq,Auu,rhs,b(g,:),Psig(g),divbg,driftg,Bmod(g),b_tor(g),gradbtor,omega(g),q_cyl(g),magn%where_core(g),force(g,:),&
+    CALL assemblyVolumeContribution(Auq,Auu,rhs,b(g,:),Psig(g),divbg,driftg,Bmod(g),b_tor(g),gradbtor,omega(g),q_cyl(g),force(g,:),&
                                 &ktis, diff_iso_vol(:, :, g), diff_ani_vol(:, :, g), Ni, NNi, Nxyzg, NNxy, NxyzNi, NNbb, upg(g, :),&
                                                                       &ueg(g, :), qeg(g, :), u0eg(g, :, :), xy(g, :), Jtor(g), Vnng)
 
@@ -2133,9 +2133,8 @@ CONTAINS
    !
    !********************************************************************
 ! #ifdef KEQUATION
-         SUBROUTINE assemblyVolumeContribution(Auq, Auu, rhs, b3, psi, divb, drift, Bmod, btor, gradBtor, omega, q_cyl, is_core, f, ktis, diffiso, diffani, Ni, NNi, Nxyzg, NNxy, NxyzNi, NNbb, upe, ue, qe, u0e, xy, Jtor, Vnng)
+         SUBROUTINE assemblyVolumeContribution(Auq, Auu, rhs, b3, psi, divb, drift, Bmod, btor, gradBtor, omega, q_cyl, f, ktis, diffiso, diffani, Ni, NNi, Nxyzg, NNxy, NxyzNi, NNbb, upe, ue, qe, u0e, xy, Jtor, Vnng)
       real*8, intent(IN)         :: btor, gradBtor(:), omega, q_cyl
-      logical, intent(in) :: is_core
       real*8                    :: growth_rate, dd_du(neq), d_omega, v, r, kappa, epsil, kappa_rhs, epsil_rhs, d_ke, kappa_epsil, kappa_safe
 #ifdef DKLINEARIZED
       real*8                    :: ddk_dU(Neq), ddk_dU_U
@@ -2327,10 +2326,10 @@ CONTAINS
       elseif ((switch%testcase .ge. 60) .and. (switch%testcase .le. 69)) then
          r = xy(1) + geom%R0/simpar%refval_length
       end if
-      call compute_v(ue, qq, btor, gradBtor, q_cyl, omega, is_core, r, v)
+      call compute_v(ue, qq, btor, gradBtor, q_cyl, omega, get_is_core(xy), r, v)
       ! call compute_gamma_ke(ue, qq, btor, gradBtor, q_cyl, omega, is_core, growth_rate)
       call compute_gamma_I(ue, qq, btor, gradBtor, r, growth_rate)
-      call compute_dg_du(ue, qq, btor, gradBtor, q_cyl, omega, is_core, r, dg_du)
+      call compute_dg_du(ue, qq, btor, gradBtor, q_cyl, omega, xy, r, dg_du)
       ! growth_rate = merge(growth_rate, 0., growth_rate / simpar%refval_time > 1e2)
       ! d_omega = phys%k_max / growth_rate ! (1e5 * simpar%refval_time )
       kappa = ue(6)

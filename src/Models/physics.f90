@@ -2184,36 +2184,72 @@ CONTAINS
          dcs_du = dcs_du/3./cs
       end if
    END SUBROUTINE compute_dcs_du
+
    subroutine compute_V(U, Q, B, gradB, q_cyl, omega, is_core, r, v)
       real*8, intent(IN) :: U(:), Q(:, :), gradB(:), B, q_cyl, omega, r
       logical, intent(in) :: is_core
       real*8, intent(OUT) :: v
-      real*8 :: cs, alpha_s, r0, tau_para, growth_rate
+      real*8 :: cs, alpha_s, r0, tau_para, gamma_k, gamma_e, gamma
       r0 = geom%r0/simpar%refval_length
       alpha_s = 3.
       call compute_cs(U, cs)
       tau_para = q_cyl*r0/max(cs, 1e-20)
-      ! call compute_gamma_ke(U, Q, B, gradB, q_cyl, omega, is_core, r, growth_rate)
-      call compute_gamma_I(u, q, b, gradB, r, growth_rate)
+      call get_gamma_k_e(U, Q, B, gradB, q_cyl, omega, is_core, R, gamma_k, gamma_e)
+      !call compute_gamma_I(u, q, b, gradB, r, gamma)
       ! growth_rate = max(growth_rate, 1e-1)
       ! growth_rate = merge(growth_rate, 0., growth_rate / simpar%refval_time > 1e2)
-      !v = cs**2/omega*alpha_s/r0*sqrt(max(0., tau_para*growth_rate))
-      v = alpha_s*q_cyl*cs/omega*growth_rate
+
+      if (gamma_k > 0. .and. gamma_e > 0.) then
+         gamma = 2*log(gamma_e) - log(gamma_k)
+         if (gamma < -690) then
+            gamma = 0.
+         else
+            gamma = exp(gamma)
+         end if
+      elseif (gamma_k > 0. .and. gamma_e == 0.) then
+         gamma = gamma_k
+      elseif (gamma_k == 0. .and. gamma_e > 0.) then
+         gamma = gamma_e
+      else
+         gamma = 0.
+      end if
+
+      gamma = max(0., gamma_k)
+
+      !v = cs**2/omega*alpha_s/r0*sqrt(max(0., tau_para*gamma))
+      v = alpha_s*q_cyl*cs/omega*gamma
    end subroutine
-   subroutine compute_dg_du(U, Q, B, gradB, q_cyl, omega, is_core, r, dg_du)
+
+   function get_is_core(xy) result(is_core)
+      real*8, intent(in) :: xy(:)
+      logical :: is_core
+      SELECT case (switch%testcase)
+      case (60)
+         is_core = sqrt(xy(2)**2 + (xy(1) - geom%R0/simpar%refval_length)**2) < 0.75/simpar%refval_length
+      case (54)
+         is_core = .true. !phys%magnetic_flux < phys%magnetic_flux(minloc(norm2(phys%b(:, :2), dim=2), dim=1))
+      case DEFAULT
+         print *, "FAIL! unkown testcase in get_is_core"
+
+      end SELECT
+
+   end function
+
+   subroutine compute_dg_du(U, Q, B, gradB, q_cyl, omega, xy, r, dg_du)
       ! use ieee_arithmetic
-      real*8, intent(IN) :: U(:), Q(:, :), gradB(:), B, q_cyl, omega, r
-      logical, intent(in) :: is_core
+      real*8, intent(IN) :: U(:), Q(:, :), gradB(:), B, q_cyl, omega, r, xy(:)
       real*8, intent(OUT) :: dg_du(:, :)
-      real*8 :: V, growth_rate, d_omega, kappa, kappa_safe, epsil, ek
+      logical :: is_core
+      real*8 :: V, d_omega, kappa, kappa_safe, epsil, ek, gamma_k, gamma_e, gamma
       kappa = u(6)
       epsil = u(7)
       kappa_safe = max(kappa, phys%k_min)/simpar%scale_kappa
       ! epsil = max(u(7), 1e-6)
       dg_du = 0.
+      is_core = get_is_core(xy)
       call compute_V(U, Q, B, gradB, q_cyl, omega, is_core, r, v)
-      ! call compute_gamma_ke(U, Q, B, gradB, q_cyl, omega, is_core, growth_rate)
-      call compute_gamma_I(u, q, b, gradB, r, growth_rate)
+      call get_gamma_k_e(U, Q, B, gradB, q_cyl, omega, is_core, R, gamma_k, gamma_e)
+      !call compute_gamma_I(u, q, b, gradB, r, gamma)
       ! growth_rate = merge(growth_rate, 0., growth_rate / simpar%refval_time > 1e2)
       ! growth_rate = max(growth_rate, 1e-10)
       ! d_omega = phys%k_max / growth_rate ! (1e5 * simpar%refval_time )
@@ -2227,11 +2263,12 @@ CONTAINS
             ek = exp(ek)
          end if
       end if
-      dg_du(6, 6) = merge(growth_rate - 2*kappa*growth_rate/phys%k_max/simpar%scale_kappa, 0., kappa > 0.)
-      dg_du(6, 7) = merge(-1., 0., (epsil > 0.) .and. (kappa > 0.) .and. (growth_rate > 0.))*simpar%scale_kappa/simpar%scale_epsil
+      dg_du(6, 6) = merge(gamma_k - 2*kappa*gamma_k/phys%k_max/simpar%scale_kappa, 0., kappa > 0.)
+      dg_du(6, 7) =  merge(-1. * gamma_k / merge(gamma_e, 1., gamma_e > 0.), 0., (epsil > 0.) .and. (kappa > 0.) .and. (gamma_k > 0.) .and. (gamma_e > 0.) )*simpar%scale_kappa/simpar%scale_epsil
       dg_du(7, 6) = 3./2.*v*ek/simpar%scale_epsil
-      dg_du(7, 7) = merge(growth_rate - 2*v*epsil*kappa_safe**(-3./2.)/simpar%scale_epsil, 0., epsil > 0.)
+      dg_du(7, 7) = merge(gamma_e - 2*epsil/simpar%scale_epsil*(v*kappa_safe**(-3./2.) + 1./phys%t_up/1e3), 0., epsil > 0.)
    end subroutine
+
    subroutine compute_ke_dke(u, kappa_epsil, d_ke)
       ! compute some linearization terms of the kappa epsilon diffusion
       real*8, intent(IN) :: u(:)
@@ -2298,13 +2335,14 @@ CONTAINS
 
 #endif
 
-   SUBROUTINE compute_gamma_ke(U, Q, B, gradB, q_cyl, omega, is_core, gamma_ke)
+   SUBROUTINE compute_gamma_dwi(U, Q, B, gradB, q_cyl, omega, is_core, gamma_ke)
       ! growth rate for turbulent energy
       real*8, intent(IN) :: U(:), Q(:, :), gradB(:), B, q_cyl, omega
       logical, intent(IN) :: is_core
             real*8             :: n, v, ti, te, V0, nB, nu_e, DB, D_perp, nu_perp, d_star, rho_L, nu_star, L_para, dn_dr, dn_dz, C_Omega, tau_para, tau, C_star, aa, an, a_phi, b_nr, b_phir, b_ni, b_phii, gr, gi
       real*8, intent(OUT) :: gamma_ke
-      real, parameter :: tol = 1e-20, m_ratio = 3670.4829678537167, coulomb_log = 15.
+      ! m_ratio = sqrt(mi / me)
+      real, parameter :: tol = 1e-20, m_ratio = 60., coulomb_log = 15.
 
       n = max(tol, U(1))
       v = U(2)/n
@@ -2322,7 +2360,6 @@ CONTAINS
       nu_star = L_para/V0*nu_e
       d_star = sqrt((D_perp + nu_perp)/DB)
       dn_dr = Q(1, 1)
-      dn_dz = Q(2, 1)
 
       C_star = V0/Omega/L_para
       C_Omega = m_ratio/nu_star
@@ -2330,7 +2367,7 @@ CONTAINS
 
       an = D_perp/DB/d_star + sqrt(C_Omega)
       a_phi = nu_perp/DB/d_star + d_star
-      b_nr = rho_L/sqrt(2*d_star)*(dn_dr - dn_dz)/nB
+      b_nr = rho_L/sqrt(2*d_star)*dn_dr/nB
       b_ni = C_Omega**0.75
       b_phir = -sqrt(2*d_star)*rho_L/abs(B)*gradB(1)
       b_phii = merge(d_star*C_Omega**0.75, 0., is_core)
@@ -2345,7 +2382,7 @@ CONTAINS
 
       gamma_ke = (sqrt((gr + norm2([gr, gi], dim=1))/2) - aa)/tau
 
-   END SUBROUTINE compute_gamma_ke
+   END SUBROUTINE compute_gamma_dwi
 
    SUBROUTINE compute_gamma_I(U, Q, Btor, gradBtor, R, gamma_I)
       ! growth rate for turbulent energy
@@ -2375,6 +2412,47 @@ CONTAINS
          gamma_I = 0.
       end if
    END SUBROUTINE compute_gamma_I
+
+   SUBROUTINE get_gamma_k_e(U, Q, B, gradB, q_cyl, omega, is_core, R, gamma_k, gamma_e)
+      ! compute gamma_k and gamma_e
+      real*8, intent(IN) :: U(:), Q(:, :), gradB(:), B, q_cyl, omega, R
+      logical, intent(IN) :: is_core
+      real*8, intent(OUT) :: gamma_k, gamma_e
+      real*8 :: gamma_dw, gamma_i, gamma_dwi
+
+      call compute_gamma_dwi(U, Q, B, gradB, q_cyl, omega, .false., gamma_i)
+      call compute_gamma_dwi(U, Q, B, gradB*0, q_cyl, omega, .true., gamma_dw)
+      call compute_gamma_dwi(U, Q, B, gradB, q_cyl, omega, is_core, gamma_dwi)
+      !call compute_gamma_I(u, q, b, gradB, R, gamma_i)
+      !
+      !gamma_k = 0. ! gamma_i
+      !gamma_e = 0. ! gamma_i
+
+      ! avoid undeflow
+      if (abs(gamma_i) < 1e-50) then
+         gamma_i = 0.
+      end if
+      if (abs(gamma_dw) < 1e-50) then
+         gamma_dw = 0.
+      end if
+      if (abs(gamma_dwi) < 1e-50) then
+         gamma_dwi = 0.
+      end if
+
+      !if (gamma_dwi > 0.) then
+      !  gamma_k = gamma_dwi
+      !  !gamma_e = gamma_dwi
+      !elseif (gamma_dwi < 0.) then
+      !  gamma_e = - gamma_dwi
+      !end if
+
+      gamma_k = gamma_dwi ! merge(-1e-4, gamma_dwi, is_core)
+      gamma_e = max(0., gamma_k)
+
+      !
+      !gamma_e = min(gamma_k, gamma_e)
+
+   END SUBROUTINE get_gamma_k_e
 
    function get_diffusion_ke(u) result(diff)
       real*8, intent(in) :: u(:)

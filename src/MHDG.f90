@@ -512,7 +512,7 @@ PROGRAM MHDG
 
             ! compute dt
             ! CALL compute_dt(errlstime)
-            ! time%dt = time%dt*1.2
+            time%dt = time%dt*1.1
          END IF
       ELSE
          IF (switch%psdtime) THEN

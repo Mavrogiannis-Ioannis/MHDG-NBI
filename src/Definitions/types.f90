@@ -299,7 +299,6 @@ MODULE types
       real*8          :: ellip              ! ellipticity (1: None)
       real*8, pointer :: coils_rmp(:, :, :) ! Coil coordinates for RMP (nbCoils*4*Discr,start-stop*(xyz)=6,rowNb) (4 for square coils)
       real*8, pointer :: coils_ripple(:, :) ! Coil coordinates for Ripple (nbCoils*Discr,start-stop*(xyz)=6)
-      logical, allocatable :: where_core(:)
    END TYPE Magnetic_type
 
    !*******************************************************
