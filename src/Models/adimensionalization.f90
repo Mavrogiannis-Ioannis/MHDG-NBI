@@ -190,8 +190,6 @@ SUBROUTINE adimensionalization()
 #ifdef KEQUATION
    phys%diff_ke_max = phys%diff_ke_max/D0
    phys%diff_ke_min = phys%diff_ke_min/D0
-   ! k limit
-   phys%k_max = phys%k_max/u0**2
    simpar%refval_k = u0**2
    simpar%refval_k_dimensions = 'm^2*s^-2'
    simpar%refval_epsilon = u0**2/t0
@@ -200,8 +198,8 @@ SUBROUTINE adimensionalization()
    ! They must be scale down for the post processing
    simpar%scale_kappa = 1. ! it doesn't work so we leave to 1
    simpar%scale_epsil = 1.
-   phys%k_min = 1e-7*simpar%scale_kappa
-   phys%epsil_min = 1e-9*simpar%scale_epsil
+   phys%k_min = 1e-20*simpar%scale_kappa
+   phys%epsil_min = 1e-20*simpar%scale_epsil
    phys%t_up = 1e-6/simpar%refval_time
 
 #endif

@@ -270,7 +270,7 @@ MODULE types
       ! Coefficients for the k equation
       real*8          :: diff_ke_min         ! Mininmum diffusion in the k equation
       real*8          :: diff_ke_max         ! Maximum diffusion in the k equation
-      real*8          :: k_max, k_min, epsil_min              ! Maximum k
+      real*8          :: k_min, epsil_min              ! Maximum k
       real*8 :: t_up
 #endif
    END TYPE Physics_type

@@ -51,7 +51,7 @@ SUBROUTINE READ_input()
    real*8      :: Pohmic, diff_nn, Re, Re_pump, puff, puff_slope
 #ifdef KEQUATION
    ! k equation
-   real*8      :: diff_ke_min, diff_ke_max, k_max, tau(7)
+   real*8      :: diff_ke_min, diff_ke_max, tau(7)
 #else
    real*8 ::  tau(5)
 #endif
@@ -72,7 +72,7 @@ SUBROUTINE READ_input()
                &Gmbohm, Gmbohme, a, Mref, tie, diff_pari, diff_pare, diff_pot, epn, etapar, Potfloat, diagsource
 #else
   NAMELIST /PHYS_LST/ diff_n, diff_u, diff_e, diff_ee, diff_vort, v_p, diff_nn, Re, Re_pump, puff,puff_slope, density_source, ener_source_e, ener_source_ee, sigma_source, fluxg_trunc, part_source,ener_source,&
-             & diff_ke_min, diff_ke_max, k_max, Pohmic, Tbg, bcflags, bohmth,&
+             & diff_ke_min, diff_ke_max, Pohmic, Tbg, bcflags, bohmth,&
                &Gmbohm, Gmbohme, a, Mref, tie, diff_pari, diff_pare, diff_pot, epn, etapar, Potfloat, diagsource
 #endif
    NAMELIST /UTILS_LST/ PRINTint, dotiming, freqdisp, freqsave
@@ -195,7 +195,6 @@ SUBROUTINE READ_input()
    ! set min to the max then it will be decreased
    phys%diff_ke_min = diff_ke_min
    phys%diff_ke_max = diff_ke_max
-   phys%k_max = k_max
 #endif
    phys%sigma_source = sigma_source
    phys%fluxg_trunc = fluxg_trunc
@@ -374,7 +373,6 @@ SUBROUTINE READ_input()
 #ifdef KEQUATION
       PRINT *, '                - minimum perp diffusion in the k equation:           ', phys%diff_ke_min
       PRINT *, '                - maximum perp diffusion in the k equation:           ', phys%diff_ke_max
-      PRINT *, '                - maximum k:                                          ', phys%k_max
 #endif
       PRINT *, '                - constant for the momentum equation (isoth)          ', phys%a
       PRINT *, '                - diagonal implicit sources                           ', phys%diagsource

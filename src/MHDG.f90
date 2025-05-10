@@ -512,7 +512,7 @@ PROGRAM MHDG
 
             ! compute dt
             ! CALL compute_dt(errlstime)
-            time%dt = time%dt*1.1
+            ! time%dt = time%dt*1.1
          END IF
       ELSE
          IF (switch%psdtime) THEN
@@ -550,7 +550,6 @@ PROGRAM MHDG
             phys%diff_nn = phys%diff_nn!*switch%diffred
 #ifdef KEQUATION
             phys%diff_ke_min = phys%diff_ke_min*switch%diffred
-!             phys%diff_k_max = phys%diff_k_max!*switch%diffred
 #endif
 #endif
 #endif

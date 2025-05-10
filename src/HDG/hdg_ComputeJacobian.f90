@@ -2135,7 +2135,7 @@ CONTAINS
 ! #ifdef KEQUATION
          SUBROUTINE assemblyVolumeContribution(Auq, Auu, rhs, b3, psi, divb, drift, Bmod, btor, gradBtor, omega, q_cyl, f, ktis, diffiso, diffani, Ni, NNi, Nxyzg, NNxy, NxyzNi, NNbb, upe, ue, qe, u0e, xy, Jtor, Vnng)
       real*8, intent(IN)         :: btor, gradBtor(:), omega, q_cyl
-      real*8                    :: growth_rate, dd_du(neq), d_omega, v, r, kappa, epsil, kappa_rhs, epsil_rhs, d_ke, kappa_epsil, kappa_safe
+      real*8                    :: growth_rate, dd_du(neq), d_omega, r, kappa, epsil, kappa_rhs, epsil_rhs, d_ke, kappa_epsil, kappa_safe, dummy
 #ifdef DKLINEARIZED
       real*8                    :: ddk_dU(Neq), ddk_dU_U
       real*8                    :: gradddk(Ndim)
@@ -2326,10 +2326,11 @@ CONTAINS
       elseif ((switch%testcase .ge. 60) .and. (switch%testcase .le. 69)) then
          r = xy(1) + geom%R0/simpar%refval_length
       end if
-      call compute_v(ue, qq, btor, gradBtor, q_cyl, omega, get_is_core(xy), r, v)
+      ! call compute_v(ue, qq, btor, gradBtor, q_cyl, omega, get_is_core(xy), r, v)
       ! call compute_gamma_ke(ue, qq, btor, gradBtor, q_cyl, omega, is_core, growth_rate)
       call compute_gamma_I(ue, qq, btor, gradBtor, r, growth_rate)
       call compute_dg_du(ue, qq, btor, gradBtor, q_cyl, omega, xy, r, dg_du)
+      call compute_ke_dke(ue, dummy, d_ke)
       ! growth_rate = merge(growth_rate, 0., growth_rate / simpar%refval_time > 1e2)
       ! d_omega = phys%k_max / growth_rate ! (1e5 * simpar%refval_time )
       kappa = ue(6)
@@ -2338,27 +2339,34 @@ CONTAINS
       kappa_rhs = 0.
       epsil_rhs = 0.
       ! Trick to avoid underflow, -690 is about the smallest floating point number in log space
-      if (growth_rate > 0. .and. kappa > 0.) then
-         kappa_rhs = 2*log(kappa) - log(phys%k_max/growth_rate)
-         if (kappa_rhs < -690.) then
-            kappa_rhs = 0.
-         else
-            kappa_rhs = exp(kappa_rhs)/simpar%scale_kappa
-         end if
-      end if
+      ! if (growth_rate > 0. .and. kappa > 0.) then
+      !    kappa_rhs = 2*log(kappa) - log(phys%k_max/growth_rate)
+      !    if (kappa_rhs < -690.) then
+      !       kappa_rhs = 0.
+      !    else
+      !       kappa_rhs = exp(kappa_rhs)/simpar%scale_kappa
+      !    end if
+      ! end if
       if (kappa < phys%k_min) then
          ! push to positive values
          kappa_rhs = kappa_rhs + phys%k_min/phys%t_up
+      ! else 
+      !    kappa_rhs = kappa_rhs + d_ke * growth_rate**2
+         
+      ! elseif (d_ke == phys%diff_ke_min) then
+      !    kappa_rhs = kappa_rhs + phys%diff_ke_min * growth_rate**2
+      ! elseif (d_ke == phys%diff_ke_max) then
+      !    kappa_rhs = kappa_rhs + phys%diff_ke_max * growth_rate**2
       end if
 
-      if (epsil > 0.) then
-         epsil_rhs = 2*log(epsil) - 1.5*log(kappa_safe)
-         if (epsil_rhs < -690.) then
-            epsil_rhs = 0.
-         else
-            epsil_rhs = -v/2*exp(epsil_rhs)/simpar%scale_epsil
-         end if
-      end if
+      ! if (epsil > 0.) then
+      !    epsil_rhs = 2*log(epsil) - log(kappa_safe)
+      !    if (epsil_rhs < -690.) then
+      !       epsil_rhs = 0.
+      !    else
+      !       epsil_rhs = -exp(epsil_rhs)/simpar%scale_epsil
+      !    end if
+      ! end if
       if (epsil < phys%epsil_min) then
          epsil_rhs = epsil_rhs + phys%epsil_min/phys%t_up
       end if

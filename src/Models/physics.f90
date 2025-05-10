@@ -699,34 +699,20 @@ CONTAINS
          where (d_ke < -690.)
             d_ke = 0.
          elsewhere
-            d_ke = exp(d_ke)
+            d_ke = exp(d_ke) * 1e-2 ! CFD coefficient
          end where
       end where
       d_ke = max(phys%diff_ke_min, min(phys%diff_ke_max, d_ke))
-      ! d_ke = min(d_ke, phys%diff_ke_min)
-! #ifndef KDIFFSMOOTH
-!
-!                D_k(i) = max(phys%diff_k_min, min(phys%diff_k_max, D_k(i)))
-! #else
-!                !for circular case q_cyl assume constant
-!
-!                call double_softplus(D_k(i), phys%diff_k_min, phys%diff_k_max)
-! #endif
 
-      ! d_iso(6, 6, :) = d_ke + phys%diff_n
-      ! d_iso(7, 7, :) = d_ke + phys%diff_n
-
-      ! set the diffusion to the self consistent one
-      do i = 1, phys%Neq
-         ! skip neutral
-         if (i == 5) then
-            cycle
-         end if
-         d_iso(i, i, :) = d_iso(i, i, :) + d_ke
-      end do
       ! kappa and epsilon need a minimum diffusion for stability
+
+      d_iso(1, 1, :) = d_iso(1, 1, :) + d_ke
+      d_iso(2, 2, :) = d_iso(2, 2, :) + d_ke
+      d_iso(3, 3, :) = d_iso(3, 3, :) + d_ke
+      d_iso(4, 4, :) = d_iso(4, 4, :) + d_ke
+      d_iso(6, 6, :) = d_iso(6, 6, :) + max(d_ke, 1.3/simpar%refval_diffusion)
+      d_iso(7, 7, :) = d_iso(7, 7, :) + max(d_ke, 1.3/simpar%refval_diffusion) / 1.3
       do i = 6, 7
-         d_iso(i, i, :) = max(d_iso(i, i, :), 2/simpar%refval_diffusion)
          d_ani(i, i, :) = d_iso(i, i, :)
       end do
 #endif
@@ -2240,33 +2226,66 @@ CONTAINS
       real*8, intent(IN) :: U(:), Q(:, :), gradB(:), B, q_cyl, omega, r, xy(:)
       real*8, intent(OUT) :: dg_du(:, :)
       logical :: is_core
-      real*8 :: V, d_omega, kappa, kappa_safe, epsil, ek, gamma_k, gamma_e, gamma
+      real*8 :: d_omega, kappa, kappa_safe, epsil, epsil_safe, ek, ke, gamma_k, gamma_e, gamma
       kappa = u(6)
       epsil = u(7)
       kappa_safe = max(kappa, phys%k_min)/simpar%scale_kappa
+      epsil_safe = max(epsil, phys%epsil_min)/simpar%scale_kappa
       ! epsil = max(u(7), 1e-6)
       dg_du = 0.
       is_core = get_is_core(xy)
-      call compute_V(U, Q, B, gradB, q_cyl, omega, is_core, r, v)
-      call get_gamma_k_e(U, Q, B, gradB, q_cyl, omega, is_core, R, gamma_k, gamma_e)
-      !call compute_gamma_I(u, q, b, gradB, r, gamma)
+      ! call compute_ke_dke(u, dummy, d_ke)
+      ! call compute_V(U, Q, B, gradB, q_cyl, omega, is_core, r, v)
+      ! call get_gamma_k_e(U, Q, B, gradB, q_cyl, omega, is_core, R, gamma_k, gamma_e)
+      call compute_gamma_I(u, q, b, gradB, r, gamma)
       ! growth_rate = merge(growth_rate, 0., growth_rate / simpar%refval_time > 1e2)
       ! growth_rate = max(growth_rate, 1e-10)
-      ! d_omega = phys%k_max / growth_rate ! (1e5 * simpar%refval_time )
+      gamma_k = gamma
+      gamma_e = gamma
       if (epsil < 0.) then
          ek = 0.
       else
-         ek = 2*log(epsil) - 2.5*log(kappa_safe)
+         ek = 2*log(epsil) - 2*log(kappa_safe)
          if (ek < -690) then
             ek = 0.
          else
             ek = exp(ek)
          end if
       end if
-      dg_du(6, 6) = merge(gamma_k - 2*kappa*gamma_k/phys%k_max/simpar%scale_kappa, 0., kappa > 0.)
-      dg_du(6, 7) =  merge(-1. * gamma_k / merge(gamma_e, 1., gamma_e > 0.), 0., (epsil > 0.) .and. (kappa > 0.) .and. (gamma_k > 0.) .and. (gamma_e > 0.) )*simpar%scale_kappa/simpar%scale_epsil
-      dg_du(7, 6) = 3./2.*v*ek/simpar%scale_epsil
-      dg_du(7, 7) = merge(gamma_e - 2*epsil/simpar%scale_epsil*(v*kappa_safe**(-3./2.) + 1./phys%t_up/1e3), 0., epsil > 0.)
+      if (kappa < 0.) then
+         ke = 0.
+      else
+         ke = 2*log(kappa) - 2*log(epsil_safe)
+         if (ke < -690) then
+            ke = 0.
+         else
+            ke = exp(ke)
+         end if
+      end if
+
+      ! if (d_ke == phys%diff_ke_min .and. kappa > phys%k_min) then
+      !   ! dg_du(6, 6) = 2 * gamma_k**2 * phys%diff_ke_min / kappa
+      !   ! dg_du(6, 7) = - gamma_k**2 * phys%diff_ke_min / epsil
+      !   dg_du(7, 6) = -1.6 * gamma_e**2 * phys%diff_ke_min * ek2 + 1.7*ek2
+      !   dg_du(7, 7) = 1.6 * gamma_e**2 * phys%diff_ke_min / kappa_safe - 1.7*2*epsil/kappa_safe
+      
+      ! if (d_ke == phys%diff_ke_max .and. kappa > phys%k_min) then
+      !   dg_du(6, 6) = 2 * gamma_k**2 * phys%diff_ke_max / kappa_safe
+      !   dg_du(6, 7) = - gamma_k**2 * phys%diff_ke_max / epsil_safe
+      !   dg_du(7, 6) = -1.5 * gamma_e**2 * phys%diff_ke_max * ek2 + 1.8*ek2
+      !   dg_du(7, 7) = 1.5 * gamma_e**2 * phys%diff_ke_max / kappa_safe - 1.8*2*epsil/kappa_safe
+      ! else
+        dg_du(6, 6) = merge(1e-2 * 2 * gamma_k**2 * kappa / epsil_safe, -1./phys%t_up, (kappa > phys%k_min))
+        dg_du(6, 7) = merge(-1e-2 * gamma_k**2 * ke - 1., 0., (epsil > phys%epsil_min) .and. (kappa > phys%k_min))
+        dg_du(7, 6) = merge(1.64 * 1e-2 * gamma_e**2 + 1.66*ek, 0., (epsil > phys%epsil_min) .and. (kappa > phys%k_min) )
+        dg_du(7, 7) = merge(- 1.66*2*epsil/kappa_safe, -1./phys%t_up, epsil > phys%epsil_min)
+      ! endif
+
+
+      ! dg_du(6, 6) = merge(gamma_k, -1./phys%t_up, kappa > phys%k_min)
+      ! dg_du(6, 7) = merge(- 1., 0., (epsil > phys%epsil_min) .and. (kappa > phys%k_min) )*simpar%scale_kappa/simpar%scale_epsil
+      ! dg_du(7, 6) = merge(1.8*ek/simpar%scale_epsil, 0., epsil > phys%epsil_min)
+      ! dg_du(7, 7) = merge(1.5*gamma_e - 1.8*2*epsil/simpar%scale_epsil/kappa_safe, -1./phys%t_up, epsil > phys%epsil_min)
    end subroutine
 
    subroutine compute_ke_dke(u, kappa_epsil, d_ke)
@@ -2288,7 +2307,7 @@ CONTAINS
          if (d_ke < -690.) then
             d_ke = 0.
          else
-            d_ke = exp(d_ke)
+            d_ke = exp(d_ke) * 1e-2
          end if
       end if
 
@@ -2860,8 +2879,8 @@ tau_aux(3) = tau_aux(3) + (phys%diff_e + abs(bn)*phys%diff_pari*up(7)**2.5*bnorm
 #ifdef NEUTRAL
             tau_aux(5) = tau_aux(5) + phys%diff_nn !! !numer%tau(5) diff_iso(5,5,1)
 #ifdef KEQUATION
-            tau_aux(6) = tau_aux(6) + 6.*diff_iso(6, 6, 1) ! ??
-            tau_aux(7) = tau_aux(7) + 6.*diff_iso(7, 7, 1)
+            tau_aux(6) = tau_aux(6) + diff_iso(6,6,1)*refElPol%ndeg/Mesh%elemSize(iel)
+            tau_aux(7) = tau_aux(7) + diff_iso(7,7,1)*refElPol%ndeg/Mesh%elemSize(iel)
 #endif
 #endif
 #else

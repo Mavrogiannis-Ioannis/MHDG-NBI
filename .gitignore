@@ -14,3 +14,4 @@ lib/MHDG-*
 src_*
 
 **/.DS_Store
+**/gmon.out
