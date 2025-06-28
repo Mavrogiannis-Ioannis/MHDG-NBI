@@ -154,7 +154,11 @@ CONTAINS
 
 #ifdef PARALL
       matPASTIX%spm%replicated = 0
+! #include "spm_f.h"          ! or   use spmf
+!       call spmSetLocal( matPASTIX%spm, .true. )
 #else
+! #include "spm_f.h"          ! or   use spmf
+!       call spmSetLocal( matPASTIX%spm, .false. )
       matPASTIX%spm%replicated = 1
 #endif
 
