@@ -1,3 +1,6 @@
+!! here we put the tapas_sources & bR_grid, bZ_grid.
+! in globals.f90 follow example of phys%B.
+
 !************************************************************
 ! project: MHDG
 ! file: types.f90

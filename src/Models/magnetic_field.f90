@@ -242,7 +242,7 @@ CONTAINS
     CHARACTER(50)  :: nit
     INTEGER                            :: min_ind(2)
 #ifdef KEQUATION
-    REAL*8                            :: q_cyl, omega,a    
+    REAL*8                            :: q_cyl, omega,a
 #endif
 
 
@@ -337,6 +337,7 @@ CONTAINS
     DO i = 1, Mesh%Nnodes
        x = Mesh%X(i, 1)
        y = Mesh%X(i, 2)
+       !!!! HERE
        Br = interpolate(ip, yvec, jp, xvec, Br2D, y, x, 1e-12)
        Bz = interpolate(ip, yvec, jp, xvec, Bz2D, y, x, 1e-12)
        Bt = interpolate(ip, yvec, jp, xvec, Bphi2D, y, x, 1e-12)
@@ -1293,13 +1294,13 @@ CONTAINS
     REAL*8            :: linex(1000), liney(1000), n_i(Mesh%Nelems*refElPol%Nnodes2D)
     REAL*8, POINTER, DIMENSION(:) :: puff_time
     INTEGER           :: puff_time_idx, puff_len
-    
+
     fname = input%puff_path
     puff_len = input%puff_dimension
 
     ! Allocate storing space in phys (puff for WEST, 403 entries)
     IF (switch%testcase .GE. 50 .AND. switch%testcase .LE. 59) THEN
-      
+
        ALLOCATE(puff_time(puff_len))
        ALLOCATE(phys%puff_exp(puff_len))
 

@@ -152,14 +152,11 @@ CONTAINS
       matPASTIX%spm%nnz = matK%nnz    ! Local number of non zeroes
       matPASTIX%spm%dof = 1              ! Degree of freedom per unknown
 
+
 #ifdef PARALL
-      matPASTIX%spm%replicated = 0
-! #include "spm_f.h"          ! or   use spmf
-!       call spmSetLocal( matPASTIX%spm, .true. )
+      matPASTIX%spm%replicated = 0    ! matrix is distributed over ranks
 #else
-! #include "spm_f.h"          ! or   use spmf
-!       call spmSetLocal( matPASTIX%spm, .false. )
-      matPASTIX%spm%replicated = 1
+      matPASTIX%spm%replicated = 1    ! matrix is fully present on each rank
 #endif
 
       call spmUpdateComputedFields(matPASTIX%spm)
@@ -251,6 +248,10 @@ CONTAINS
          call cpu_time(tps)
          call system_clock(cks, clock_rate)
       end if
+
+
+      ! iparm(IPARM_ORDERING) = 0 ! PastixOrderPTScotch   ! 0 = default, 2 = PT-Scotch
+      ! or: iparm(IPARM_ORDERING) = 0               ! let PaStiX pick automatically
 
       call pastix_task_analyze(matPASTIX%pastix_data, matPASTIX%spm, matPASTIX%info)
       if (matPASTIX%info .ne. 0) then

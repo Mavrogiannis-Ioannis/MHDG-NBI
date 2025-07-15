@@ -5,7 +5,7 @@
     read_gmsh           = .true.	! .true. = mesh is read from msh/mesh file format
     readMeshFromSol     = .false.	! .true. = mesh is read from solution file
     set_2d_order	= .false.	! .true. = set the order of the 2d polynomial if not set already
-    order_2d            = 8 ! if read_gmsh = .true. and set_2d_order = .true., order of the 2d polynomial
+    order_2d = 8 ! if read_gmsh = .true. and set_2d_order = .true., order of the 2d polynomial
     axisym              = .true.        ! Is it an axisymmetric simulation?
                                         ! true = yes (even for magnetic perturbation)
                                         ! false = no
@@ -86,7 +86,7 @@
     tau(3)              = 1.E+0         ! Stabilization parameter 3rd equation
     tau(4)              = 1.E+0         ! Stabilization parameter 4th equation
     tau(5)              = 1.E-0         ! Stabilization parameter 5th equation
-    nrp                 = 3 ! 3 before          ! Max number of Newton-Raphson iterations
+    nrp                 = 25 ! 3 before          ! Max number of Newton-Raphson iterations
     tNR                 = 1e-4          ! Tolerance of the Newton-Raphson scheme
     tTM                 = 1e-8          ! Tolerance for the steady state achievement
     div                 = 1e5           ! Divergence of Newton-Raphon iteration
@@ -98,7 +98,6 @@
     dc_coe              = 100           ! Coefficient of the diffusion to add in the corners
     thr                 = 1.e-12        ! Min value of density allowed (works only if the switch is activated)
     thrpre              = 1.e-12        ! Min value of pressure allowed (works only if the switch is activated)
-
     stab                = 5             ! Stabilization type (from 1 to 4 (5), 2 is good, 5 is better (simplified 2, only for N-Gamma(-T)))
     dumpnr_min          = 0.1           ! Dumping factor for Newton-Raphson (0<dumpnr<1, first parameter to decrease if NR fail) typical 0.1
     dumpnr_max          = 1.            ! It is calculated each NR iteration based on the current number of iteration in a shape of tanh
@@ -135,7 +134,7 @@
     osc_adapt		= .true.	! Refine if oscillations are higher than threshold
     osc_tol		= -2.		! Refine if oscillations are higher than this threshold, only if osc_adapt = .true.
     osc_check		= -3.		! Save the solution as checkpoint if the maximum value of oscillations are lower than this threshold (-100 for no oscillations at all)
-    geometry_path	= '/path/to/geo/file/from/gmesh/geometry.geo'
+    geometry_path	= '/path/to/geo/file/from/gmesh/geometry.geo
 /
 
 &GEOM_LST
@@ -159,7 +158,7 @@
 
 
 &TIME_LST
-    dt0                 = 1e2 !1e9        ! Initial time step ! 1e0 ~ 10^-7
+    dt0                 = 1e9        ! Initial time step ! 1e0 ~ 10^-7
     nts                 = 10         ! number of timesteps ! Max number of time iterations to do in the current session (only for transient simulations) 30
     tfi                 = 1e10           ! Final time: the simulation stops when this time is reached
     tsw                 = 0             ! Switch to modify the time step
@@ -225,7 +224,7 @@
     bcflags(9)          = 50            ! Out
     bcflags(10)         = 50            ! Upper Limiter
     ! ****** Boundary threshold for Bohm
-    bohmth              = 0.01           ! threshold for imposing the bohm boundary condition !for circ put 0.1 0.02
+    bohmth              = 0.00           ! threshold for imposing the bohm boundary condition !for circ put 0.1 0.02
     bohm_energy_thresh  = 2e-4           ! threshold on adimensional conservative ion energy for imposing Bohm, 2e-4 for density of 1e7 and no mach number corresponds to ~0.1 eV
     ! ****** Boundary coefficients for the Bohm boundary condition of the temperature equations:
     Gmbohm              = 2.5           ! gamma for Bohm boundary condition for energy equation (usually 7) and for ions energy equation (usually 2.5)
