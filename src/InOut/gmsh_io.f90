@@ -709,10 +709,9 @@ CONTAINS
 
               IF(el_index .eq. 0) THEN
                   PRINT *, "Error in generate_elemface_info: element not found. STOP."
-                  STOP
-              ENDIF
-
-              IF (equality(T(el_index, 1),nodes(1)) .OR. (equality(T(el_index, 1),nodes(2)))) THEN
+              !     STOP
+              ! ENDIF
+              ELSEIF (equality(T(el_index, 1),nodes(1)) .OR. (equality(T(el_index, 1),nodes(2)))) THEN
                   ! Check for loc_fa = 1 or 3
                   IF (equality(T(el_index, 2),nodes(1)) .OR. (equality(T(el_index, 2),nodes(2)))) THEN
                       loc_fa = 1

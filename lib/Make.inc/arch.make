@@ -82,7 +82,7 @@ else ifeq ($(MDL),$(MDL_NGAMMANEUTRAL))
  ADDMOD+=hdg_LimitingTechniques.o
 else ifeq ($(MDL),$(MDL_NGAMMATITE))
  RMDL=NGammaTiTe
- MACROS+= -DNGAMMA 
+ MACROS+= -DNGAMMA
  MACROS+= -DTEMPERATURE
  ADDMOD+=hdg_LimitingTechniques.o
 else ifeq ($(MDL),$(MDL_NGAMMATITENEUTRAL))
@@ -99,7 +99,7 @@ else ifeq ($(MDL),$(MDL_NGAMMATITENEUTRAL))
  MACROS+= -DTHREEBODYREC
  #Takes legacy approximated expression for cx rate. Left only for back-comparison, should not be usually used.
  #MACROS+= -DLEGACYCX
- #The combination of the two flags applies OpenADAS spline for thermal cx coefficient            
+ #The combination of the two flags applies OpenADAS spline for thermal cx coefficient
  MACROS+= -DEXPANDEDCX
  MACROS+= -DTHERMALCX
  #Applies soft min and max on neutral diffusion coefficient. Should be more stable
@@ -118,7 +118,7 @@ else ifeq ($(MDL),$(MDL_NGAMMATITENEUTRAL))
  ADDMOD+=hdg_LimitingTechniques.o
 else ifeq ($(MDL),$(MDL_NGAMMATITENEUTRALK))
  RMDL=NGammaTiTe
- MACROS+= -DNGAMMA 
+ MACROS+= -DNGAMMA
  MACROS+= -DTEMPERATURE
  MACROS+= -DNEUTRAL
  MACROS+= -DAMJUELSPLINES
@@ -140,7 +140,7 @@ else ifeq ($(MDL),$(MDL_NGAMMATITENEUTRALK))
  ADDMOD+=hdg_LimitingTechniques.o
 else ifeq ($(MDL),$(MDL_NGAMMAVORT))
  RMDL=NGammaVort
- MACROS+= -DNGAMMA 
+ MACROS+= -DNGAMMA
  MACROS+= -DVORTICITY
  ADDMOD+=hdg_LimitingTechniques.o
 else ifeq ($(MDL),$(MDL_LAPLACE))
@@ -149,7 +149,7 @@ else ifeq ($(MDL),$(MDL_LAPLACE))
 else ifeq ($(MDL),$(MDL_NGAMMALAPLACE))
  RMDL=NGammaLaplace
  MACROS+= -DNGAMMA
- ADDMOD+=hdg_LimitingTechniques.o 
+ ADDMOD+=hdg_LimitingTechniques.o
 else
  abort Unsupported MDL==$(MDL)
  exit
@@ -162,7 +162,7 @@ endif
 ifeq ($(MODE),$(MODE_SERIAL))
 else ifeq ($(MODE),$(MODE_PARALL))
   MACROS+= -DPARALL
-  ADDMOD+=Communications.o  
+  ADDMOD+=Communications.o
 endif
 
 ifeq ($(DIM),$(DIM_3D))
@@ -275,7 +275,7 @@ LIB += -L/usr/lib/x86_64-linux-gnu -lX11
 LIB += -L/usr/lib/x86_64-linux-gnu/xtables -lXt
 
 #GMSH
-LIB += -L$(MHDG_GMSH_DIR)/lib -Llib -lgmsh -L. -Wl,-rpath=$(MHDG_GMSH_DIR)/lib 
+LIB += -L$(MHDG_GMSH_DIR)/lib -Llib -lgmsh -L. -Wl,-rpath=$(MHDG_GMSH_DIR)/lib
 
 
 # PASTIX
@@ -299,10 +299,10 @@ LIB += -L/usr/lib/x86_64-linux-gnu -lblas -llapack -llapacke
 #LIB += -L$(MHDG_MKL_DIR)/build/mkl/latest/lib/intel64 -Wl,-rpath,$(MHDG_MKL_DIR)/build/mkl/latest/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
 
 # PSBLAS/MLD2P4
-ifeq  ($(PSBLMG),$(LIB_YES)) 
- LIB += -L$(MHDG_PSBLAS_DIR)/lib/ -L$(MHDG_MLD2P4_DIR)/lib/ 
+ifeq  ($(PSBLMG),$(LIB_YES))
+ LIB += -L$(MHDG_PSBLAS_DIR)/lib/ -L$(MHDG_MLD2P4_DIR)/lib/
  LIB += -lpsb_krylov -lmld_prec -lpsb_prec -lpsb_krylov -lpsb_prec -lpsb_util -lpsb_base
-else ifeq ($(PSBLAS),$(LIB_YES)) 
+else ifeq ($(PSBLAS),$(LIB_YES))
  LIB += -L$(MHDG_PSBLAS_DIR)/lib/
  LIB += -lpsb_util -lpsb_krylov -lpsb_prec -lpsb_base
 endif
