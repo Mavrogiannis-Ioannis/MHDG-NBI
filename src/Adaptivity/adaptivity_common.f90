@@ -62,7 +62,7 @@ CONTAINS
 
 
       ALLOCATE(h_target_nodal(MAXVAL(T)))
-      ALLOCATE(nodes_repeats(MAXVAL(T)))      
+      ALLOCATE(nodes_repeats(MAXVAL(T)))
 
       CALL sum_h_target_nodal(T, h_map_elements, h_target_nodal, nodes_repeats)
 
@@ -112,7 +112,7 @@ CONTAINS
       REAL*8, INTENT(IN) :: h_target_elements_ind(:)
       REAL*8, INTENT(OUT) :: h_target_elements(:)
       REAL*8, PARAMETER :: tol = 1.0E-10
-      
+
       h_target_elements = h_target_elements_est
       WHERE(ABS(h_target_elements_ind-h_map_elements) .GT. tol)
          h_target_elements = h_target_elements_ind
@@ -391,6 +391,13 @@ CONTAINS
 
     CALL free_mesh
 
+    write(6, *) 'At @adaptivity_common'
+    write(6, *) 'At @adaptivity_common'
+    write(6, *) 'At @adaptivity_common'
+    write(6, *) 'At @adaptivity_common'
+    write(6, *) 'At @adaptivity_common'
+    write(6, *) 'At @adaptivity_common'
+    write(6, *) 'face_info is ...', face_info
     CALL generate_elemface_info(Tp,Tb_IN, Tb_LIM, Tb_PUFF, Tb_PUMP, Tb_OUT, p+1, total_face_info)
     CALL generate_boundary_names(Tb_Dirichlet, Tb_LEFT, Tb_RIGHT, Tb_UP, Tb_DOWN, Tb_WALL, Tb_LIM, Tb_IN, Tb_OUT, Tb_PUFF, Tb_PUMP, Tb_ULIM, Tb, boundaryFlag, element_order)
     CALL load_mesh2global_var(Ndim, Nelems, Nextfaces, Nnodes, Nnodesperelem, Nnodesperface, elemType, Tp, Xp_aux, Tb, boundaryFlag, total_face_info)
@@ -865,8 +872,8 @@ CONTAINS
       INTEGER*4           :: size_view,number_of_triangles,ret
       REAL*8              :: sf_index, vertex_coordinates(2),h_target_on_vertex
       !GMSH always have (X,Y,Z) coordinates
-      gmsh_dim = 3 
-      number_of_vertices_per_triangle = 3 
+      gmsh_dim = 3
+      number_of_vertices_per_triangle = 3
       number_of_triangles = SIZE(connectivity,1)
 
       ! initalize gmsh
@@ -942,7 +949,7 @@ CONTAINS
       WRITE(param_adapt_char, *) adapt%param_est
       WRITE(count_adapt_char, *) count_adapt
       new_mesh_name_npne = TRIM(ADJUSTL(mesh_name_npne)) // '_param'// TRIM(ADJUSTL(param_adapt_char)) // '_n' // TRIM(ADJUSTL(count_adapt_char))
-      
+
       buffer = "./res/" // TRIM(ADJUSTL(new_mesh_name_npne)) // ".msh"
       IF (MPIvar%glob_id .EQ. 0) THEN
          WRITE (*,*) "Mesh saved as: ", TRIM(ADJUSTL(new_mesh_name_npne))

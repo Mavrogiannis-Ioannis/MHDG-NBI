@@ -103,11 +103,11 @@ else ifeq ($(MDL),$(MDL_NGAMMATITENEUTRAL))
  MACROS+= -DEXPANDEDCX
  MACROS+= -DTHERMALCX
  #Applies soft min and max on neutral diffusion coefficient. Should be more stable
- MACROS+= -DDNNSMOOTH
+ #MACROS+= -DDNNSMOOTH
  #Turns on linearization of neutral diffusion. Better to keep it on
- MACROS+= -DDNNLINEARIZED
+ #MACROS+= -DDNNLINEARIZED
  #Model with constant neutral diffusion. If turned on, turn off the previous two flags
- #MACROS+= -DCONSTANTNEUTRALDIFF
+ MACROS+= -DCONSTANTNEUTRALDIFF
  #Actually not saves, but monitors in the output particle balance
  MACROS+= -DSAVEFLUX
  #The following 4 flags are development ones, should not be used

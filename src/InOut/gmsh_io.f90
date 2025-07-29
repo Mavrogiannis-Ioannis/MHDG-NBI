@@ -483,6 +483,11 @@ CONTAINS
       DEALLOCATE(indices)
     ENDIF
 
+
+
+    write(6, *) '@/gmsh_io.f90'
+    write(6, *) 'face_info is ...', face_info
+
     CALL generate_elemface_info(T,Tb_IN, Tb_LIM, Tb_PUFF, Tb_PUMP, Tb_OUT, element_order, face_info)
     CALL generate_boundary_names(Tb_Dirichlet, Tb_LEFT, Tb_RIGHT, Tb_UP, Tb_DOWN, Tb_WALL, Tb_LIM, Tb_IN, Tb_OUT, Tb_PUFF, Tb_PUMP, Tb_ULIM, Tb, boundaryFlag, element_order)
     CALL load_mesh2global_var(SIZE(node_x,1), SIZE(T,1), SIZE(Tb,1), SIZE(node_x,2), SIZE(T,2), element_order, 0, T, transpose(node_x), Tb, boundaryFlag, face_info)
@@ -493,7 +498,7 @@ CONTAINS
 
     CALL free_reference_element_pol(refEl)
 
-  END
+  END SUBROUTINE gmsh_data_read
 
 
   SUBROUTINE generate_boundary_names(Tb_Dirichlet, Tb_LEFT, Tb_RIGHT, Tb_UP, Tb_DOWN, Tb_WALL, Tb_LIM, Tb_IN, Tb_OUT, Tb_PUFF, Tb_PUMP, Tb_ULIM, Tb, boundaryFlag, element_order)
@@ -630,129 +635,137 @@ CONTAINS
 
   ENDSUBROUTINE generate_boundary_names
 
+
+
   SUBROUTINE generate_elemface_info(T, Tb_IN, Tb_LIM, Tb_PUFF, Tb_PUMP, Tb_OUT, element_order, face_info)
-      INTEGER, INTENT(IN)                              :: T(:,:)
-      INTEGER, INTENT(IN)                              :: element_order
-      INTEGER, DIMENSION(:,:), ALLOCATABLE, INTENT(IN) :: Tb_IN, Tb_LIM,Tb_PUMP, Tb_PUFF, Tb_OUT
-      INTEGER, ALLOCATABLE, INTENT(OUT)                :: face_info(:,:)
-      INTEGER, ALLOCATABLE                             :: aux_extfaces(:,:), aux_Tb(:,:)
-      INTEGER                                          :: n_Tb_vec(5)
-      INTEGER                                          :: nodes(2)
-      INTEGER                                          :: n_faces, ifa, iel, n_elements, n_boundaries, el_index, loc_fa, elemFaceInfo_fa
-      INTEGER                                          :: i, counter
+    INTEGER, INTENT(IN)                              :: T(:,:)
+    INTEGER, INTENT(IN)                              :: element_order
+    INTEGER, DIMENSION(:,:), ALLOCATABLE, INTENT(IN) :: Tb_IN, Tb_LIM,Tb_PUMP, Tb_PUFF, Tb_OUT
+    INTEGER, ALLOCATABLE, INTENT(OUT)                :: face_info(:,:)
+    INTEGER, ALLOCATABLE                             :: aux_extfaces(:,:), aux_Tb(:,:)
+    INTEGER                                          :: n_Tb_vec(5)
+    INTEGER                                          :: nodes(2)
+    INTEGER                                          :: n_faces, ifa, iel, n_elements, n_boundaries, el_index, loc_fa, elemFaceInfo_fa
+    INTEGER                                          :: i, counter
 
-      n_elements = SIZE(T,1)
-      n_Tb_vec = 0
-      IF(ALLOCATED(Tb_PUMP)) THEN
-        n_Tb_vec(1) = SIZE(Tb_PUMP,1)
-      ENDIF
-      IF(ALLOCATED(Tb_PUFF)) THEN
-        n_Tb_vec(2) = SIZE(Tb_PUFF,1)
-      ENDIF
-      IF(ALLOCATED(Tb_IN)) THEN
-        n_Tb_vec(3) = SIZE(Tb_IN,1)
-      ENDIF
-      IF(ALLOCATED(Tb_LIM)) THEN
-        n_Tb_vec(4) = SIZE(Tb_LIM,1)
-      ENDIF
-      IF(ALLOCATED(Tb_OUT)) THEN
-        n_Tb_vec(5) = SIZE(Tb_OUT,1)
-      ENDIF
+    n_elements = SIZE(T,1)
+    n_Tb_vec = 0
+    IF(ALLOCATED(Tb_PUMP)) THEN
+       n_Tb_vec(1) = SIZE(Tb_PUMP,1)
+    ENDIF
+    IF(ALLOCATED(Tb_PUFF)) THEN
+       n_Tb_vec(2) = SIZE(Tb_PUFF,1)
+    ENDIF
+    IF(ALLOCATED(Tb_IN)) THEN
+       n_Tb_vec(3) = SIZE(Tb_IN,1)
+    ENDIF
+    IF(ALLOCATED(Tb_LIM)) THEN
+       n_Tb_vec(4) = SIZE(Tb_LIM,1)
+    ENDIF
+    IF(ALLOCATED(Tb_OUT)) THEN
+       n_Tb_vec(5) = SIZE(Tb_OUT,1)
+    ENDIF
 
-      n_boundaries = SIZE(n_Tb_vec)
+    n_boundaries = SIZE(n_Tb_vec)
 
-      ALLOCATE(face_info(SUM(n_Tb_vec), 2))
+    ALLOCATE(face_info(SUM(n_Tb_vec), 2))
 
-      DO i = 1, n_boundaries
-          IF(n_Tb_vec(i) .ne. 0) THEN
-              ALLOCATE(aux_extfaces(n_Tb_vec(i), 2))
-              ALLOCATE(aux_Tb(n_Tb_vec(i), element_order))
-              SELECT CASE(i)
-                  CASE (1)
-                      aux_Tb = Tb_PUMP
-                  CASE (2)
-                      aux_Tb = Tb_PUFF
-                  CASE (3)
-                      aux_Tb = Tb_IN
-                  CASE (4)
-                      aux_Tb = Tb_LIM
-                  CASE (5)
-                      aux_Tb = Tb_OUT
-              END SELECT
+    DO i = 1, n_boundaries
+       IF(n_Tb_vec(i) .ne. 0) THEN
+          ALLOCATE(aux_extfaces(n_Tb_vec(i), 2))
+          ALLOCATE(aux_Tb(n_Tb_vec(i), element_order))
+          SELECT CASE(i)
+          CASE (1)
+             aux_Tb = Tb_PUMP
+          CASE (2)
+             aux_Tb = Tb_PUFF
+          CASE (3)
+             aux_Tb = Tb_IN
+          CASE (4)
+             aux_Tb = Tb_LIM
+          CASE (5)
+             aux_Tb = Tb_OUT
+          END SELECT
+       ELSE
+          CYCLE
+       ENDIF
+
+       n_faces = n_Tb_vec(i)
+       el_index = 0
+       loc_fa = 0
+       counter = 0
+
+       DO ifa = 1, n_faces
+          IF(i .eq. 1) THEN
+             nodes(1) = aux_Tb(ifa, element_order)
+             nodes(2) = aux_Tb(ifa, 1)
           ELSE
-              CYCLE
+             nodes(1) = aux_Tb(ifa, 1)
+             nodes(2) = aux_Tb(ifa, element_order)
           ENDIF
 
-          n_faces = n_Tb_vec(i)
-          el_index = 0
-          loc_fa = 0
-          counter = 0
-
-          DO ifa = 1, n_faces
-              IF(i .eq. 1) THEN
-                  nodes(1) = aux_Tb(ifa, element_order)
-                  nodes(2) = aux_Tb(ifa, 1)
-              ELSE
-                  nodes(1) = aux_Tb(ifa, 1)
-                  nodes(2) = aux_Tb(ifa, element_order)
-              ENDIF
-
-              DO iel = 1, n_elements
-                  counter = COUNT(T(iel, 1:3) .eq. nodes(1))
-                  counter = counter + COUNT(T(iel, 1:3) .eq. nodes(2))
-                  IF(counter .eq. 2) THEN
-                      el_index = iel
-                      EXIT
-                  ENDIF
-                  counter = 0
-              ENDDO
-
-              IF(el_index .eq. 0) THEN
-                  PRINT *, "Error in generate_elemface_info: element not found. STOP."
-                  STOP
-              ENDIF
-
-              IF (equality(T(el_index, 1),nodes(1)) .OR. (equality(T(el_index, 1),nodes(2)))) THEN
-                  ! Check for loc_fa = 1 or 3
-                  IF (equality(T(el_index, 2),nodes(1)) .OR. (equality(T(el_index, 2),nodes(2)))) THEN
-                      loc_fa = 1
-                  ELSEIF(equality(T(el_index, 3),nodes(1)) .OR. (equality(T(el_index, 3),nodes(2)))) THEN
-                      loc_fa = 3
-                  END IF
-              ELSEIF (equality(T(el_index, 2),nodes(1)) .OR. (equality(T(el_index, 2),nodes(2)))) THEN
-                  ! Check for loc_fa = 2 or 1
-                  IF (equality(T(el_index, 3),nodes(1)) .OR. (equality(T(el_index, 3),nodes(2)))) THEN
-                      loc_fa = 2
-                  ELSEIF(equality(T(el_index, 1),nodes(1)) .OR. (equality(T(el_index, 1),nodes(2)))) THEN
-                      loc_fa = 1
-                  END IF
-              ELSEIF (equality(T(el_index, 3),nodes(1)) .OR. (equality(T(el_index, 3),nodes(2)))) THEN
-                  ! Check for loc_fa = 3 or elemFaceInfo_fa = 2
-                  IF (equality(T(el_index, 1),nodes(1)) .OR. (equality(T(el_index, 1),nodes(2)))) THEN
-                      loc_fa = 3
-                  ELSEIF(equality(T(el_index, 2),nodes(1)) .OR. (equality(T(el_index, 2),nodes(2)))) THEN
-                      elemFaceInfo_fa = 2
-                  END IF
-              ELSE
-                  ! Error condition
-                  PRINT *, 'Something is wrong in gmsh_io'
-                  STOP
-              END IF
-
-              aux_extfaces(ifa,1) = el_index
-              aux_extfaces(ifa,2) = loc_fa
-
+          DO iel = 1, n_elements
+             counter = COUNT(T(iel, 1:3) .eq. nodes(1))
+             counter = counter + COUNT(T(iel, 1:3) .eq. nodes(2))
+             IF(counter .eq. 2) THEN
+                el_index = iel
+                EXIT
+             ENDIF
+             counter = 0
           ENDDO
 
-          IF(i .eq. 1) THEN
-              face_info(1:n_Tb_vec(i),:) = aux_extfaces(:,:)
-          ELSE
-              face_info(SUM(n_Tb_vec(1:i-1))+1:SUM(n_Tb_vec(1:i)),:) = aux_extfaces(:,:)
-          ENDIF
+          IF(el_index .eq. 0) THEN
+             PRINT *, "el_index is 0..."
+             PRINT *, "Error in generate_elemface_info: element not found. STOP."
+             ! edited OUT the STOP + ENDIF statement below, switched it for an ELSE statement.
+             ! STOP ! edited OUT
+          ! ENDIF ! edited OUT
 
-          DEALLOCATE(aux_extfaces)
-          DEALLOCATE(aux_Tb)
-      ENDDO
+          ELSE ! edited IN
+             IF (equality(T(el_index, 1),nodes(1)) .OR. (equality(T(el_index, 1),nodes(2)))) THEN
+                ! Check for loc_fa = 1 or 3
+                IF (equality(T(el_index, 2),nodes(1)) .OR. (equality(T(el_index, 2),nodes(2)))) THEN
+                   loc_fa = 1
+                ELSEIF(equality(T(el_index, 3),nodes(1)) .OR. (equality(T(el_index, 3),nodes(2)))) THEN
+                   loc_fa = 3
+                END IF
+             ELSEIF (equality(T(el_index, 2),nodes(1)) .OR. (equality(T(el_index, 2),nodes(2)))) THEN
+                ! Check for loc_fa = 2 or 1
+                IF (equality(T(el_index, 3),nodes(1)) .OR. (equality(T(el_index, 3),nodes(2)))) THEN
+                   loc_fa = 2
+                ELSEIF(equality(T(el_index, 1),nodes(1)) .OR. (equality(T(el_index, 1),nodes(2)))) THEN
+                   loc_fa = 1
+                END IF
+             ELSEIF (equality(T(el_index, 3),nodes(1)) .OR. (equality(T(el_index, 3),nodes(2)))) THEN
+                ! Check for loc_fa = 3 or elemFaceInfo_fa = 2
+                IF (equality(T(el_index, 1),nodes(1)) .OR. (equality(T(el_index, 1),nodes(2)))) THEN
+                   loc_fa = 3
+                ELSEIF(equality(T(el_index, 2),nodes(1)) .OR. (equality(T(el_index, 2),nodes(2)))) THEN
+                   elemFaceInfo_fa = 2
+                END IF
+             ELSE
+                ! Error condition
+                PRINT *, 'Something is wrong in gmsh_io'
+                STOP
+             END IF
+
+          END IF ! EDITED IN for the new if statement at L717, IF(el_index .eq. 0) THEN
+
+
+          aux_extfaces(ifa,1) = el_index
+          aux_extfaces(ifa,2) = loc_fa
+
+       ENDDO
+
+       IF(i .eq. 1) THEN
+          face_info(1:n_Tb_vec(i),:) = aux_extfaces(:,:)
+       ELSE
+          face_info(SUM(n_Tb_vec(1:i-1))+1:SUM(n_Tb_vec(1:i)),:) = aux_extfaces(:,:)
+       ENDIF
+
+       DEALLOCATE(aux_extfaces)
+       DEALLOCATE(aux_Tb)
+    ENDDO
 
   contains
 
@@ -762,14 +775,14 @@ CONTAINS
       logical            :: flag
 
       IF(input1 .eq. input2) THEN
-        flag = .true.
+         flag = .true.
       ELSE
-        flag = .false.
+         flag = .false.
       ENDIF
 
       return
-    endfunction
-  ENDSUBROUTINE
+    endfunction equality
+  ENDSUBROUTINE generate_elemface_info
 
   subroutine convert_gmsh_to_hdf5(h5_filename, Ndim, Nelems, Nextfaces, Nnodes, Nnodesperelem, Nnodesperface, elemType, T, X, Tb, boundaryFlag)
     character(LEN=*), INTENT(IN) :: h5_filename
@@ -1974,8 +1987,8 @@ CONTAINS
     RETURN
   ENDSUBROUTINE i4mat_transpose_print_some
 
-  SUBROUTINE mesh_base_one ( node_num, element_order, element_num, element_node )
 
+  SUBROUTINE mesh_base_one ( node_num, element_order, element_num, element_node )
     !*****************************************************************************80
     !
     !! MESH_BASE_ONE ensures that the element definition is one-based.
@@ -2013,23 +2026,17 @@ CONTAINS
     !    inputt/output, int ELEMENT_NODE(ELEMENT_ORDER,ELEMENT_NUM), the element
     !    definitions.
     !
-
-
     INTEGER ( kind = 4 ) element_num
     INTEGER ( kind = 4 ) element_order
-
     INTEGER ( kind = 4 ) element_node(element_order,element_num)
     INTEGER ( kind = 4 ), PARAMETER :: i4_huge = 2147483647
     INTEGER ( kind = 4 ) node_max
     INTEGER ( kind = 4 ) node_min
     INTEGER ( kind = 4 ) node_num
-
     node_min = + i4_huge
     node_max = - i4_huge
-
     node_min = MINVAL ( element_node(1:element_order,1:element_num) )
     node_max = MAXVAL ( element_node(1:element_order,1:element_num) )
-
     IF ( node_min == 0 .AND. node_max == node_num - 1 ) THEN
        WRITE ( *, '(a)' ) ' '
        WRITE ( *, '(a)' )'MESH_BASE_ONE:'
@@ -2050,12 +2057,12 @@ CONTAINS
        WRITE ( *, '(a,i8)' ) '  NODE_MAX = ', node_max
        WRITE ( *, '(a,i8)' ) '  NODE_NUM = ', node_num
     END IF
-
     RETURN
   ENDSUBROUTINE mesh_base_one
 
-  SUBROUTINE r8mat_copy ( m, n, a, b )
 
+
+  SUBROUTINE r8mat_copy ( m, n, a, b )
     !*****************************************************************************80
     !
     !! R8MAT_COPY copies an R8MAT.
@@ -2084,21 +2091,16 @@ CONTAINS
     !
     !    Output, real ( kind = 8 ) B(M,N), a copy of the matrix.
     !
-
-
     INTEGER ( kind = 4 ) m
     INTEGER ( kind = 4 ) n
-
     REAL ( kind = 8 ) a(m,n)
     REAL ( kind = 8 ) b(m,n)
-
     b(1:m,1:n) = a(1:m,1:n)
-
     RETURN
   ENDSUBROUTINE r8mat_copy
 
-  SUBROUTINE r8mat_transpose_print ( m, n, a, title )
 
+  SUBROUTINE r8mat_transpose_print ( m, n, a, title )
     !*****************************************************************************80
     !
     !! R8MAT_TRANSPOSE_PRINT prints an R8MAT, transposed.
@@ -2127,21 +2129,17 @@ CONTAINS
     !
     !    inputt, character ( len = * ) TITLE, a title.
     !
-
-
     INTEGER ( kind = 4 ) m
     INTEGER ( kind = 4 ) n
-
     REAL ( kind = 8 ) a(m,n)
     CHARACTER ( len = * ) title
-
     CALL r8mat_transpose_print_some ( m, n, a, 1, 1, m, n, title )
-
     RETURN
   ENDSUBROUTINE r8mat_transpose_print
 
-  SUBROUTINE r8mat_transpose_print_some ( m, n, a, ilo, jlo, ihi, jhi, title )
 
+
+  SUBROUTINE r8mat_transpose_print_some ( m, n, a, ilo, jlo, ihi, jhi, title )
     !*****************************************************************************80
     !
     !! R8MAT_TRANSPOSE_PRINT_SOME prints some of an R8MAT, transposed.
@@ -2174,12 +2172,9 @@ CONTAINS
     !
     !    inputt, character ( len = * ) TITLE, a title.
     !
-
-
     INTEGER ( kind = 4 ), PARAMETER :: incx = 5
     INTEGER ( kind = 4 ) m
     INTEGER ( kind = 4 ) n
-
     REAL ( kind = 8 ) a(m,n)
     CHARACTER ( len = 14 ) ctemp(incx)
     INTEGER ( kind = 4 ) i
@@ -2195,56 +2190,42 @@ CONTAINS
     INTEGER ( kind = 4 ) jhi
     INTEGER ( kind = 4 ) jlo
     CHARACTER ( len = * ) title
-
     WRITE ( *, '(a)' ) ' '
     WRITE ( *, '(a)' ) TRIM ( title )
-
     IF ( m <= 0 .OR. n <= 0 ) THEN
        WRITE ( *, '(a)' ) ' '
        WRITE ( *, '(a)' ) '  (None)'
        RETURN
     END IF
-
     DO i2lo = MAX ( ilo, 1 ), MIN ( ihi, m ), incx
-
        i2hi = i2lo + incx - 1
        i2hi = MIN ( i2hi, m )
        i2hi = MIN ( i2hi, ihi )
-
        inc = i2hi + 1 - i2lo
-
        WRITE ( *, '(a)' ) ' '
-
        DO i = i2lo, i2hi
           i2 = i + 1 - i2lo
           WRITE ( ctemp(i2), '(i8,6x)' ) i
        END DO
-
        WRITE ( *, '(''  Row   '',5a14)' ) ctemp(1:inc)
        WRITE ( *, '(a)' ) '  Col'
        WRITE ( *, '(a)' ) ' '
-
        j2lo = MAX ( jlo, 1 )
        j2hi = MIN ( jhi, n )
-
        DO j = j2lo, j2hi
-
           DO i2 = 1, inc
              i = i2lo - 1 + i2
              WRITE ( ctemp(i2), '(g14.6)' ) a(i,j)
           END DO
-
           WRITE ( *, '(i5,a,5a14)' ) j, ':', ( ctemp(i), i = 1, inc )
-
        END DO
-
     END DO
-
     RETURN
   ENDSUBROUTINE r8mat_transpose_print_some
 
-  SUBROUTINE s_begin ( s1, s2, flag )
 
+
+  SUBROUTINE s_begin ( s1, s2, flag )
     !*****************************************************************************80
     !
     !! S_BEGIN is TRUE if one string matches the beginning of the other.
@@ -2283,8 +2264,6 @@ CONTAINS
     !    Output, logical ( kind = 4 ) S_BEGIN, is TRUE if the strings match up to
     !    the end of the shorter string, ignoring case.
     !
-
-
     LOGICAL ( kind = 4 ) flag_ch_eqi
     INTEGER ( kind = 4 ) i1
     INTEGER ( kind = 4 ) i2
@@ -2293,7 +2272,6 @@ CONTAINS
     INTEGER ( kind = 4 ) s1_length
     CHARACTER ( len = * ) s2
     INTEGER ( kind = 4 ) s2_length
-
     s1_length = len_TRIM ( s1 )
     s2_length = len_TRIM ( s2 )
     !
@@ -2302,54 +2280,41 @@ CONTAINS
     !  what most people want.
     !
     IF ( s1_length == 0 .OR. s2_length == 0 ) THEN
-
        IF ( s1_length == 0 .AND. s2_length == 0 ) THEN
           flag = .TRUE.
        ELSE
           flag = .FALSE.
        END IF
-
        RETURN
-
     END IF
-
     i1 = 0
     i2 = 0
     !
     !  Find the next nonblank in S1.
     !
     DO
-
        DO
-
           i1 = i1 + 1
-
           IF ( s1_length < i1 ) THEN
              flag = .TRUE.
              RETURN
           END IF
-
           IF ( s1(i1:i1) /= ' ' ) THEN
              EXIT
           END IF
-
        END DO
        !
        !  Find the next nonblank in S2.
        !
        DO
-
           i2 = i2 + 1
-
           IF ( s2_length < i2 ) THEN
              flag = .TRUE.
              RETURN
           END IF
-
           IF ( s2(i2:i2) /= ' ' ) THEN
              EXIT
           END IF
-
        END DO
        !
        !  If the characters match, get the next pair.
@@ -2358,16 +2323,13 @@ CONTAINS
        IF ( .NOT. flag_ch_eqi) THEN
           EXIT
        END IF
-
     END DO
-
     flag = .FALSE.
-
     RETURN
   ENDSUBROUTINE s_begin
 
-  SUBROUTINE ch_eqi ( c1, c2, flag )
 
+  SUBROUTINE ch_eqi ( c1, c2, flag )
     !*****************************************************************************80
     !
     !! CH_EQI is a case insensitive comparison of two characters for equality.
@@ -2394,31 +2356,26 @@ CONTAINS
     !
     !    Output, logical ( kind = 4 ) CH_EQI, the result of the comparison.
     !
-
-
     LOGICAL ( kind = 4 ), INTENT(OUT) :: flag
     CHARACTER c1
     CHARACTER c1_cap
     CHARACTER c2
     CHARACTER c2_cap
-
     c1_cap = c1
     c2_cap = c2
-
     CALL ch_cap ( c1_cap )
     CALL ch_cap ( c2_cap )
-
     IF ( c1_cap == c2_cap ) THEN
        flag = .TRUE.
     ELSE
        flag = .FALSE.
     END IF
-
     RETURN
   ENDSUBROUTINE ch_eqi
 
-  SUBROUTINE s_to_i4 ( s, ival, ierror, length )
 
+
+  SUBROUTINE s_to_i4 ( s, ival, ierror, length )
     !*****************************************************************************80
     !
     !! S_TO_I4 reads an I4 from a string.
@@ -2449,8 +2406,6 @@ CONTAINS
     !    Output, integer ( kind = 4 ) LENGTH, the number of characters of S
     !    used to make IVAL.
     !
-
-
     CHARACTER c
     INTEGER ( kind = 4 ) i
     INTEGER ( kind = 4 ) ierror
@@ -2459,22 +2414,17 @@ CONTAINS
     INTEGER ( kind = 4 ) ival
     INTEGER ( kind = 4 ) length
     CHARACTER ( len = * ) s
-
     ierror = 0
     istate = 0
     isgn = 1
     ival = 0
-
     DO i = 1, len_TRIM ( s )
-
        c = s(i:i)
        !
        !  Haven't read anything.
        !
        IF ( istate == 0 ) THEN
-
           IF ( c == ' ' ) THEN
-
           ELSE IF ( c == '-' ) THEN
              istate = 1
              isgn = -1
@@ -2492,9 +2442,7 @@ CONTAINS
           !  Have read the sign, expecting digits.
           !
        ELSE IF ( istate == 1 ) THEN
-
           IF ( c == ' ' ) THEN
-
           ELSE IF ( LLE ( '0', c ) .AND. LLE ( c, '9' ) ) THEN
              istate = 2
              ival = ICHAR ( c ) - ICHAR ( '0' )
@@ -2506,7 +2454,6 @@ CONTAINS
           !  Have read at least one digit, expecting more.
           !
        ELSE IF ( istate == 2 ) THEN
-
           IF ( LLE ( '0', c ) .AND. LLE ( c, '9' ) ) THEN
              ival = 10 * ival + ICHAR ( c ) - ICHAR ( '0' )
           ELSE
@@ -2514,9 +2461,7 @@ CONTAINS
              length = i - 1
              RETURN
           END IF
-
        END IF
-
     END DO
     !
     !  If we read all the characters in the string, see if we're OK.
@@ -2528,12 +2473,12 @@ CONTAINS
        ierror = 1
        length = 0
     END IF
-
     RETURN
   ENDSUBROUTINE s_to_i4
 
-  SUBROUTINE s_to_r8 ( s, dval, ierror, length )
 
+
+  SUBROUTINE s_to_r8 ( s, dval, ierror, length )
     !*****************************************************************************80
     !
     !! S_TO_R8 reads an R8 from a string.
@@ -2615,7 +2560,6 @@ CONTAINS
     !    to form the number, including any terminating
     !    characters such as a trailing comma or blanks.
     !
-
     CHARACTER c
     LOGICAL ( kind = 4 ) flag1, flag2
     REAL ( kind = 8 ) dval
@@ -2633,9 +2577,7 @@ CONTAINS
     REAL ( kind = 8 ) rexp
     REAL ( kind = 8 ) rtop
     CHARACTER ( len = * ) s
-
     nchar = len_TRIM ( s )
-
     ierror = 0
     dval = 0.0D+00
     length = -1
@@ -2647,15 +2589,11 @@ CONTAINS
     jbot = 1
     ihave = 1
     iterm = 0
-
     DO
-
        length = length + 1
-
        IF ( nchar < length+1 ) THEN
           EXIT
        END IF
-
        c = s(length+1:length+1)
        !
        !  Blank character.
@@ -2663,9 +2601,7 @@ CONTAINS
        CALL ch_eqi ( c, 'E' , flag1)
        CALL ch_eqi ( c, 'D' , flag2)
        IF ( c == ' ' ) THEN
-
           IF ( ihave == 2 ) THEN
-
           ELSE IF ( ihave == 6 .OR. ihave == 7 ) THEN
              iterm = 1
           ELSE IF ( 1 < ihave ) THEN
@@ -2675,7 +2611,6 @@ CONTAINS
           !  Comma.
           !
        ELSE IF ( c == ',' .OR. c == ';' ) THEN
-
           IF ( ihave /= 1 ) THEN
              iterm = 1
              ihave = 12
@@ -2685,7 +2620,6 @@ CONTAINS
           !  Minus sign.
           !
        ELSE IF ( c == '-' ) THEN
-
           IF ( ihave == 1 ) THEN
              ihave = 2
              isgn = -1
@@ -2699,7 +2633,6 @@ CONTAINS
           !  Plus sign.
           !
        ELSE IF ( c == '+' ) THEN
-
           IF ( ihave == 1 ) THEN
              ihave = 2
           ELSE IF ( ihave == 6 ) THEN
@@ -2711,7 +2644,6 @@ CONTAINS
           !  Decimal point.
           !
        ELSE IF ( c == '.' ) THEN
-
           IF ( ihave < 4 ) THEN
              ihave = 4
           ELSE IF ( 6 <= ihave .AND. ihave <= 8 ) THEN
@@ -2722,7 +2654,6 @@ CONTAINS
           !
           !  Scientific notation exponent marker.
        ELSE IF ( flag1 .OR. flag2 ) THEN
-
           IF ( ihave < 6 ) THEN
              ihave = 6
           ELSE
@@ -2732,7 +2663,6 @@ CONTAINS
           !  Digit.
           !
        ELSE IF (  ihave < 11 .AND. LLE ( '0', c ) .AND. LLE ( c, '9' ) ) THEN
-
           IF ( ihave <= 2 ) THEN
              ihave = 3
           ELSE IF ( ihave == 4 ) THEN
@@ -2742,9 +2672,7 @@ CONTAINS
           ELSE IF ( ihave == 9 ) THEN
              ihave = 10
           END IF
-
           CALL ch_to_digit ( c, ndig )
-
           IF ( ihave == 3 ) THEN
              rtop = 10.0D+00 * rtop + REAL ( ndig, kind = 8 )
           ELSE IF ( ihave == 5 ) THEN
@@ -2769,7 +2697,6 @@ CONTAINS
        IF ( iterm == 1 ) THEN
           EXIT
        END IF
-
     END DO
     !
     !  If we haven't seen a terminator, and we have examined the
@@ -2803,14 +2730,13 @@ CONTAINS
                / REAL ( jbot, kind = 8 ) )
        END IF
     END IF
-
     dval = REAL ( isgn, kind = 8 ) * rexp * rtop / rbot
-
     RETURN
   ENDSUBROUTINE s_to_r8
 
-  SUBROUTINE timestamp ( )
 
+
+  SUBROUTINE timestamp ( )
     !*****************************************************************************80
     !
     !! TIMESTAMP prints the current YMDHMS date as a time stamp.
@@ -2835,8 +2761,6 @@ CONTAINS
     !
     !    None
     !
-
-
     CHARACTER ( len = 8 ) ampm
     INTEGER ( kind = 4 ) d
     INTEGER ( kind = 4 ) h
@@ -2850,9 +2774,7 @@ CONTAINS
     INTEGER ( kind = 4 ) s
     INTEGER ( kind = 4 ) values(8)
     INTEGER ( kind = 4 ) y
-
     CALL date_and_TIME ( values = values )
-
     y = values(1)
     m = values(2)
     d = values(3)
@@ -2860,7 +2782,6 @@ CONTAINS
     n = values(6)
     s = values(7)
     mm = values(8)
-
     IF ( h < 12 ) THEN
        ampm = 'AM'
     ELSE IF ( h == 12 ) THEN
@@ -2881,15 +2802,14 @@ CONTAINS
           END IF
        END IF
     END IF
-
     WRITE ( *, '(i2.2,1x,a,1x,i4,2x,i2,a1,i2.2,a1,i2.2,a1,i3.3,1x,a)' ) &
          d, TRIM ( month(m) ), y, h, ':', n, ':', s, '.', mm, TRIM ( ampm )
-
     RETURN
   ENDSUBROUTINE timestamp
 
-  SUBROUTINE ch_cap ( ch )
 
+
+  SUBROUTINE ch_cap ( ch )
     !*****************************************************************************80
     !
     !! CH_CAP capitalizes a single character.
@@ -2914,22 +2834,17 @@ CONTAINS
     !  Parameters:
     !
     !    inputt/output, character CH, the character to capitalize.
-
-
     CHARACTER ch
     INTEGER ( kind = 4 ) itemp
-
     itemp = IACHAR ( ch )
-
     IF ( 97 <= itemp .AND. itemp <= 122 ) THEN
        ch = ACHAR ( itemp - 32 )
     END IF
-
     RETURN
   ENDSUBROUTINE ch_cap
 
-  SUBROUTINE ch_to_digit ( c, digit )
 
+  SUBROUTINE ch_to_digit ( c, digit )
     !*****************************************************************************80
     !
     !! CH_TO_DIGIT returns the integer value of a base 10 digit.
@@ -2965,27 +2880,19 @@ CONTAINS
     !    Output, integer ( kind = 4 ) DIGIT, the corresponding integer value.
     !    If C was 'illegal', then DIGIT is -1.
     !
-
-
     CHARACTER c
     INTEGER ( kind = 4 ) digit
-
     IF ( LGE ( c, '0' ) .AND. LLE ( c, '9' ) ) THEN
-
        digit = ICHAR ( c ) - 48
-
     ELSE IF ( c == ' ' ) THEN
-
        digit = 0
-
     ELSE
-
        digit = -1
-
     END IF
-
     RETURN
   ENDSUBROUTINE ch_to_digit
+
+
 
   SUBROUTINE get_unit ( iunit )
 
