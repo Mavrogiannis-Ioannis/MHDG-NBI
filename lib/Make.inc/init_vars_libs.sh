@@ -30,7 +30,7 @@ export MHDG_PASTIX_DIR=$HOME/pastix_marcello/pastix
 source $MHDG_PASTIX_DIR/build/bin/pastix_env.sh
 export MHDG_SCOTCH_DIR=$HOME/scotch-v7.0.3-install #/usr # /lib/x86_64-linux-gnu/scotch-int32 # $MHDG_LIB_DIR/scotch_32
 export MHDG_GMSH_DIR=$HOME/gmsh-4.11.1-Linux64-sdk # $MHDG_LIB_DIR/gmsh-4.11.1-Linux64-sdk
-export MHDG_PASTIX_DIR=$PASTIX_ROOT # I think this is wrong...
+# export MHDG_PASTIX_DIR=$PASTIX_ROOT # I think this is wrong...
 
 #export MHDG_PSBLAS_DIR=$MHDG_LIB_DIR/psblas3
 #export MHDG_MLD2P4_DIR=$MHDG_LIB_DIR/mld2p4-2
