@@ -1,6 +1,6 @@
 
 &SWITCH_LST
-    steady              = .false.       ! Is it a steady state simulation?
+    steady              = .true.       ! Is it a steady state simulation?
                                         ! .false. = time evolving simulation
                                         ! .true.  = steady state simulation
     read_gmsh           = .true.        ! .true. = mesh is read from msh/mesh file format
@@ -21,7 +21,7 @@
 
     psdtime             = .true.        ! Reduce the diffusion every time we reach the steady state
                                         ! condition (only works if steady=.false.)
-    diffred             = 0.6  ! Reduction factor of the diffusion for psdtime simulation (set for 20*diff_x)
+    diffred             = 0.44999999999999996  ! Reduction factor of the diffusion for psdtime simulation (set for 20*diff_x)
 
     !diffred             = 0.76923076923
     diffmin             = 0.001           ! Minimum value of the diffusion for a psdtime simulation
@@ -104,7 +104,7 @@
 
     stab                = 5             ! Stabilization type (from 1 to 4 (5), 2 is good, 5 is better (simplified 2, only for N-Gamma(-T)))
     dumpnr_min          = 0.1  ! Dumping factor for Newton-Raphson (0<dumpnr<1, first parameter to decrease if NR fail) typical 0.1
-    dumpnr_max          = 0.6  ! It is calculated each NR iteration based on the current number of iteration in a shape of tanh
+    dumpnr_max          = 0.4  ! It is calculated each NR iteration based on the current number of iteration in a shape of tanh
     dumpnr_width        = 10.           ! dumpnr(n) = dumpnr_min+(dumpnr_max-dumpnr_min)/2.*(1+TANH((n-dumpnr_n0)/dumpnr_width))
     dumpnr_n0           = 10.           !
     ntor                = 3             ! Number of elements in the toroidal direction
@@ -174,13 +174,13 @@
 
 &PHYS_LST
     ! ****** Diffusion parameters in m^2/s (start at 20*diff_x if psdtime = true)
-    diff_n    =  (20,)   ! diffusion in the continuity equation
-    diff_u    =  (20,)   ! diffusion in the momentum equation
-    diff_e    =  (20,)   ! perpendicular diffusion for the energy equation
-    diff_ee   =  (20,)   ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
-    diff_vort =  (20,)   ! diffusion in the vorticity equation
+    diff_n    =  0.382   ! diffusion in the continuity equation
+    diff_u    =  0.382   ! diffusion in the momentum equation
+    diff_e    =  0.382   ! perpendicular diffusion for the energy equation
+    diff_ee   =  0.382   ! perpendicular diffusion in the electron temperature equation (for the TiTe model)
+    diff_vort =  0.382   ! diffusion in the vorticity equation
     v_p = 0. ! Pinch velocity in the continuity equation (Pinch = vp*(psi^2 + psi^2*tanh((0.95 - psi)/0.02)) with psi = 1. at separatrix )
-    diff_nn = (20000.0,) ! 2e8 ! normally goes to 1 ! max diffusion for neutral equation or if used DCONSTANTNEUTRALDIFF flag, then the value of neutral diffusion
+    diff_nn = 382.0 ! 2e8 ! normally goes to 1 ! max diffusion for neutral equation or if used DCONSTANTNEUTRALDIFF flag, then the value of neutral diffusion
 
     ! external heating in the form of shifted 2D gaussian ~exp(-(r-(R0+dr)**2/sigmar**2))*exp(-(z-(Z0+dz)**2/sigmaz**2))
     heating_power = 0.              ! [W] Total power of heating
